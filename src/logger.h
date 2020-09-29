@@ -1,4 +1,7 @@
 
+#ifndef LOGGER_H
+#define LOGGER_H
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -37,13 +40,6 @@ log_f(__FILE__, __func__, __LINE__, "DEBUG", LOGGER_DEBUG_COLOR, stdout, __VA_AR
 #define LOGGER_DEBUG_COLOR "\x1B[36m"
 
 void log_f(const char *file, const char *func, int line, const char *type, 
-           const char *color, FILE *filePtr, const char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-
-    fprintf(filePtr, "[%s%s%s][%s:%d in %s]: ", color, type, LOGGER_CLEAR_COLOR, file, line, func);
-    vfprintf(filePtr, format, ap);
-    fprintf(filePtr, "\n");
-
-    va_end(ap);
-}
+           const char *color, FILE *filePtr, const char *format, ...);
+    
+#endif

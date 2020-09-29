@@ -6,15 +6,25 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "logger.h"
+#include "minish.h"
+
+#define MAX_INPUT_SIZE 10240u
+
+/**
+ * TODO - Handle interrupt signals
+ */
 
 int main(int argc, const char** argv) {
-    printf("Hello, world!\n");
+    char answer[MAX_INPUT_SIZE];
     
-    LOG_DEBUG("Hello %s", "there");
-    LOG_INFO("%d, %d, %d", 1, 2, 3);
-    LOG_WARNING("This i a nullptr %p", NULL);
-    LOG_ERROR("Yes");
-    return 0;
+    if (!prompt(answer, MAX_INPUT_SIZE)) {
+        LOG_ERROR("Prompt failed");
+        exit(EXIT_FAILURE);
+    }
+    LOG_DEBUG("Input from user: %s", answer);
+
+    return EXIT_SUCCESS;
 }
