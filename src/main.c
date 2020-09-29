@@ -11,20 +11,28 @@
 #include "logger.h"
 #include "minish.h"
 
-#define MAX_INPUT_SIZE 10240u
+#define INPUT_BUFFER_SIZE 10240
 
 /**
  * TODO - Handle interrupt signals
  */
 
-int main(int argc, const char** argv) {
-    char answer[MAX_INPUT_SIZE];
+int main(void) {
+    char input_buffer[INPUT_BUFFER_SIZE];
     
-    if (!prompt(answer, MAX_INPUT_SIZE)) {
+    if (!prompt(input_buffer, INPUT_BUFFER_SIZE)) {
         LOG_ERROR("Prompt failed");
         exit(EXIT_FAILURE);
     }
-    LOG_DEBUG("Input from user: %s", answer);
+    LOG_DEBUG("Input from user: %s", input_buffer);
+
+    struct command* command = parse(input_buffer);
+    if (!command) {
+        LOG_ERROR("Parsing failed");
+        exit(EXIT_FAILURE);
+    }
+
+    clean(command);
 
     return EXIT_SUCCESS;
 }

@@ -30,4 +30,4 @@ run: minish
 	./minish
 
 debug: minish
-	valgrind ./minish
+	valgrind --leak-check=full ./minish

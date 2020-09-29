@@ -2,10 +2,20 @@
 #ifndef MINISH_H
 #define MINISH_H
 
-char* prompt(char* answer, unsigned int size);
+#include <stdbool.h>
 
-void parse(const char* command);
+struct command {
+    unsigned int argc;     /* argument count    */
+    char** args;           /* arguments         */
+    bool bg;               /* run in background */
+};
 
-void execute();
+char* prompt(char* buffer, int size);
+
+struct command* parse(const char* str);
+
+void execute(struct command* cmd, unsigned int count);
+
+void clean(struct command* command);
 
 #endif
