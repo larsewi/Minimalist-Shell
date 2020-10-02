@@ -3,36 +3,39 @@
  * main.c
  * Lars Erik Wik
  * 29/09/2020
+ * 
+ * REPL
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 
 #include "logger.h"
 #include "minish.h"
 
-#define INPUT_BUFFER_SIZE 10240
+#define MAX_INPUT_SIZE 4096
 
-/**
- * TODO - Handle interrupt signals
- */
 
 int main(void) {
-    char input_buffer[INPUT_BUFFER_SIZE];
-    
-    if (!prompt(input_buffer, INPUT_BUFFER_SIZE)) {
-        LOG_ERROR("Prompt failed");
-        exit(EXIT_FAILURE);
-    }
-    LOG_DEBUG("Input from user: %s", input_buffer);
+    enum status ret;
+    char input_buffer[MAX_INPUT_SIZE];
 
-    struct command* command = parse(input_buffer);
-    if (!command) {
-        LOG_ERROR("Parsing failed");
-        exit(EXIT_FAILURE);
-    }
+    do {
+        print_prompt();
 
-    clean(command);
+        ret = get_user_input(input_buffer, MAX_INPUT_SIZE);
 
-    return EXIT_SUCCESS;
+        if (ret == Success)
+            ret = execute_command(input_buffer);
+        
+    } while (ret == Success);
+
+    if (ret == Quit) {
+        LOG_INFO("Exit success");
+        return EXIT_SUCCESS;
+    } 
+    LOG_ERROR("Exit failure");
+    return EXIT_FAILURE;
 }

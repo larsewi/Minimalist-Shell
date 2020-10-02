@@ -5,32 +5,32 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#ifdef NDEBUG
+#if NDEBUG
+#define LOG_ERROR(...)
+#else
 #define LOG_ERROR(...) \
 log_f(__FILE__, __func__, __LINE__, "ERROR", LOGGER_ERROR_COLOR, stderr, __VA_ARGS__)
-#else
-#define LOG_ERROR(...)
 #endif
 
-#ifdef NDEBUG
+#if NDEBUG
+#define LOG_WARNING(...)
+#else
 #define LOG_WARNING(...) \
 log_f(__FILE__, __func__, __LINE__, "WARNING", LOGGER_WARNING_COLOR, stdout, __VA_ARGS__)
-#else
-#define LOG_WARNING(...)
 #endif
 
-#ifdef NDEBUG
+#if NDEBUG
+#define LOG_INFO(...)
+#else
 #define LOG_INFO(...) \
 log_f(__FILE__, __func__, __LINE__, "INFO", LOGGER_INFO_COLOR, stdout, __VA_ARGS__)
-#else
-#define LOG_INFO(...)
 #endif
 
-#ifdef NDEBUG
+#if NDEBUG
+#define LOG_DEBUG(...)
+#else
 #define LOG_DEBUG(...) \
 log_f(__FILE__, __func__, __LINE__, "DEBUG", LOGGER_DEBUG_COLOR, stdout, __VA_ARGS__)
-#else
-#define LOG_DEBUG(...)
 #endif
 
 #define LOGGER_CLEAR_COLOR "\x1B[0m"

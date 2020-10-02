@@ -2,20 +2,16 @@
 #ifndef MINISH_H
 #define MINISH_H
 
-#include <stdbool.h>
-
-struct command {
-    unsigned int argc;     /* argument count    */
-    char** args;           /* arguments         */
-    bool bg;               /* run in background */
+enum status {
+    Success, /* Shell should keep running */
+    Failure, /* An error has occured      */
+    Quit     /* Shell should stop running */
 };
 
-char* prompt(char* buffer, int size);
+void print_prompt();
 
-struct command* parse(const char* str);
+enum status get_user_input(char* buffer, int size);
 
-void execute(struct command* cmd, unsigned int count);
-
-void clean(struct command* command);
+enum status execute_command(char* command);
 
 #endif

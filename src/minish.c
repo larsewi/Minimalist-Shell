@@ -4,108 +4,147 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 #include "logger.h"
 #include "minish.h"
+#include "strarray.h"
 
 #define COLOR_GREEN "\033[1;32m"
 #define COLOR_RESET "\033[0m"
 
-#define DELIMITOR " \t"
+#define LIST_DIRECTORY "ls"
+#define CHANGE_DIRECTORY "cd"
+#define PRINT_WORKING_DIRECTORY "pwd"
+#define EXIT_SHELL "exit"
+#define EXECUTE_PROGRAM "./"
 
-void print_prompt();
-struct command* parse_command(const char* str);
-void print_working_directory();
+/**
+ * NAME: list_directory - print content of directory
+ * DESC: 
+ * RETURN: 
+ * AUTHOR: Written by Lars Erik Wik
+ */
+void list_directory(const char** str_array);
 
-char* prompt(char* buffer, int size) {
-    print_prompt();
+void change_directory(const char** str_array);
 
-    if(!fgets(buffer, size, stdin)) {
-        LOG_ERROR("Failed to retrieve user input");
-        return NULL;
-    }
+void print_working_directory(const char** str_array);
 
-    buffer[strlen(buffer) - 1] = '\0'; /* Remove newline */
-    return buffer;
-}
-
-struct command* parse(const char* str) {
-    char buffer[strlen(str)];
-
-    /* Allocate space for command */
-    struct command* command = malloc(sizeof(struct command));
-    if (!command) {
-        LOG_ERROR("Failed to allocate memory");
-        return NULL;
-    }
-
-    /* Count number of arguments */
-    strcpy(buffer, str);
-    command->argc = 0;
-    char* token = strtok(buffer, DELIMITOR);
-    while (token) {
-        command->bg = strcmp(token, "&") == 0;
-        command->argc++;
-        token = strtok(NULL, DELIMITOR);
-    }
-
-    /* The '&' is not an argument */
-    if (command->bg) {
-        LOG_DEBUG("Run in background");
-        command->argc--;
-    }
-    LOG_DEBUG("Argument count: %d", command->argc);
-
-    /* Allocate space for arguments*/
-    command->args = malloc(sizeof(char*) * command->argc);
-
-    /* Parse arguments */
-    unsigned int i;
-    strcpy(buffer, str);
-    token = strtok(buffer, DELIMITOR);
-    for (i = 0; i < command->argc; i++) {
-        LOG_DEBUG("Parse argument: %s", token);
-        command->args[i] = malloc(strlen(token) + 1);
-        strcpy(command->args[i], token);
-        token = strtok(NULL, DELIMITOR);
-    }
-
-    return command;
-}
-
-void clean(struct command* command) {
-    LOG_DEBUG("Cleaning up");
-
-    unsigned int i;
-    for (i = 0; i < command->argc; i++) {
-        free(command->args[i]);
-    }
-    free(command->args);
-    free(command);
-}
+void execute_binary(const char** str_array);
 
 void print_prompt() {
-    const char* user = getenv("USER");
-    if (!user) {
+    const char* username = getenv("USER");
+    if (!username) {
         LOG_WARNING("Failed to retrieve environment variable USER");
-        user = "user";
+        username = "user";
     }
-    printf(COLOR_GREEN "%s@minish" COLOR_RESET "$ ", user);
+    printf(COLOR_GREEN "%s@minish" COLOR_RESET "$ ", username);
 }
 
-void print_working_directory() {
-    /** 
-     * As an extension to the POSIX.1-2001 standard,  glibc's  getcwd()  allo‐
-     * cates  the  buffer dynamically using malloc(3) if buf is NULL.  In this
-     * case, the allocated buffer has the length size  unless  size  is  zero,
-     * when  buf  is allocated as big as necessary.  The caller should free(3)
-     * the returned buffer. (Linux Programmer's Manual, 2018-04-30)
-     */
-    char* cwd = getcwd(NULL, 0);
-    if (!cwd) {
-        LOG_ERROR("Failed to retrieve current working directory: %s", errno);
+enum status get_user_input(char* buffer, int size) {
+    buffer = fgets(buffer, size, stdin);
+    if (buffer == NULL)
+        return feof(stdin) ? Quit : Failure;
+    buffer[strlen(buffer) - 1] = '\0';
+    return Success;
+}
+
+enum status execute_command(char* str) {
+    enum status ret = Success;
+    char** str_array = split_str(str, " \t");
+
+    if (str_array == NULL) /* If no command */
+        return ret;
+
+    else if (!strcmp(str_array[0], LIST_DIRECTORY))
+        list_directory(str_array);
+
+    else if (!strcmp(str_array[0], CHANGE_DIRECTORY))
+        change_directory(str_array);
+
+    else if (!strcmp(str_array[0], PRINT_WORKING_DIRECTORY))
+        print_working_directory(str_array);
+
+    else if (!strcmp(str_array[0], EXIT_SHELL))
+        ret = Quit;
+
+    else
+        execute_binary(str_array);
+
+    free_str_array(str_array);
+
+    return ret;
+}
+
+/**
+ * TODO: add color scheme to output in order to differentiate file types
+ * TODO: add argument feature (e.g. what and where to print)
+ */
+void list_directory(const char** str_array) {
+    LOG_DEBUG("Argument count: %d", str_array_len(str_array));
+    if (str_array_len(str_array) > 1) {
+        printf("minish: cd: too many arguments\n");
         return;
     }
+
+    DIR* directory = opendir(".");
+    struct dirent* dirent;
+
+    if (directory == NULL) {
+        perror("Failed to open current working directory: %s");
+        return;
+    }
+
+    dirent = readdir(directory);
+    while (dirent != NULL) {
+        printf("%s\n", dirent->d_name);
+        dirent = readdir(directory);
+    }
+    closedir(directory);
+}
+
+void change_directory(const char** str_array) {
+    if (str_array_len(str_array) > 2)
+        printf("minish: cd: too many arguments\n");
+    else if (chdir(str_array[1]) == -1)
+        perror("minish: cd");
+}
+
+void print_working_directory(const char** str_array) {
+    if (str_array_len(str_array) > 1) {
+        printf("minish: cd: too many arguments\n");
+        return;
+    }
+
+    char* cwd = getcwd(NULL, 0);
+    if (!cwd) {
+        perror("minish: cd");
+        return;
+    }
+
     printf("%s\n", cwd);
     free(cwd);
+}
+
+void execute_binary(const char** str_array) {
+    pid_t child_pid;
+    int child_status;
+
+    LOG_DEBUG("Forking process");
+    child_pid = fork();
+    if (child_pid == 0) {
+        /* This is the child */
+        execv(str_array[0], str_array);
+        /* The  exec() functions return only if an error has occurred.  */
+        printf("Command '%s' not found\n", str_array[0]);
+    } else {
+        pid_t some_child;
+        do {
+            some_child = wait(&child_status);
+            if (some_child == child_pid)
+                LOG_DEBUG("Child process terminated");
+        } while (some_child != child_pid);
+    }
 }
