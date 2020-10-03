@@ -126,8 +126,25 @@ void list_directory(char** str_array) {
 void change_directory(char** str_array) {
     if (str_array_len(str_array) > 2)
         fprintf(stderr, "minish: cd: too many arguments\n");
-    else if (chdir(str_array[1]) == -1)
-        perror("minish: cd");
+    else if (str_array_len(str_array) == 1) {
+        const char* username = getenv("USER");
+        char path[strlen("/home/") + strlen(username) + 2];
+
+        strcpy(path, "/home/");
+        strcat(path, username);
+
+        if (chdir(path) == -1) {
+            LOG_INFO("Failed to change working directory to '%s'", path);
+            perror("minish: cd");
+            return;
+        }
+    } else {
+        if (chdir(str_array[1]) == -1) {
+            LOG_INFO("Failed to set path '%s'", str_array[1]);
+            perror("minish: cd");
+            return;
+        }
+    }
 }
 
 void print_working_directory(char** str_array) {
@@ -165,8 +182,9 @@ void execute_binary(char** str_array) {
         pid_t some_child;
         do {
             some_child = wait(&child_status);
-            if (some_child == child_pid)
+            if (some_child == child_pid){
                 LOG_DEBUG("Child process terminated");
+            }
         } while (some_child != child_pid);
 
         if (WIFEXITED(child_status))
