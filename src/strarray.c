@@ -9,8 +9,11 @@
 char* sub_str(char* dest, const char* src, unsigned int from, unsigned int to) {
     unsigned int i = from;
 
-    if (!src) return NULL;
-    if (!dest) dest = malloc(to + 1 - from);
+    if (src == NULL || strlen(src) < to || to < from) 
+        return NULL;
+
+    /* Dynamically allocate buffer if destination is NULL */
+    if (dest == NULL) dest = malloc(to + 1 - from);
 
     while (i++ < from && src[i] != '\0')
         dest[i] = src[i];
@@ -32,7 +35,7 @@ char** split_str(const char* src, const char* delim) {
 
     /* Allocate space for string array */
     str_array = malloc(sizeof(char*) * (count + 1));
-    str_array[count] = NULL; /* Array terminated by NULL */
+    str_array[count] = NULL; /* Terminate array with NULL pointer */
 
     /* Split string */
     i = 0;
@@ -65,7 +68,7 @@ unsigned int count_token(const char* src, const char* delim) {
     return count;
 }
 
-unsigned int str_array_len(const char** str_array) {
+unsigned int str_array_len(char** str_array) {
     unsigned int len = 0;
 
     while (str_array[len] != NULL) ++len;
@@ -76,8 +79,8 @@ void free_str_array(char** str_array) {
     int i = 0;
 
     while (str_array[i] != NULL) {
-        free(str_array[i++]);
+        free(str_array[i++]); /* Free each element */
     }
-    free(str_array[i]);
-    free(str_array);
+    free(str_array[i]); /* Free the terminating NULL pointer */
+    free(str_array); /* Free the array */
 }

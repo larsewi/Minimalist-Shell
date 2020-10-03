@@ -1,9 +1,9 @@
 
 CC = gcc
-CFLAGS = -std=c99 -g -Wall -Wextra -Wconversion -DNDEBUG=0
+CFLAGS = -std=c99 -g -Wall -Wextra -Wconversion -DNDEBUG=1
 LDFLAGS = 
 
-.PHONY: all obj clean run debug
+.PHONY: all obj clean run leakcheck
 
 all: minish
 
@@ -32,5 +32,5 @@ clean:
 run: minish 
 	./minish
 
-debug: minish
+leakcheck: minish
 	valgrind --leak-check=full ./minish

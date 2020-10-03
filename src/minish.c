@@ -1,11 +1,15 @@
 
-#include <stdio.h>
+/**
+ * minish.c
+ * Lars Erik Wik
+ * 29/09/2020
+ */
+
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
-#include <sys/types.h>
 #include <dirent.h>
+#include <sys/wait.h>
 
 #include "logger.h"
 #include "minish.h"
@@ -21,20 +25,31 @@
 #define EXECUTE_PROGRAM "./"
 
 /**
- * NAME: list_directory - print content of directory
- * DESC: 
- * RETURN: 
- * AUTHOR: Written by Lars Erik Wik
+ * Prints a list of all files in the current working directory to  'stdout'. If
+ * an error occurs an error  message  is  printed  to  'stderr'.  Currently  no
+ * arguments are supported.
  */
-void list_directory(const char** str_array);
+void list_directory(char** str_array);
 
-void change_directory(const char** str_array);
+/**
+ * Change current working directory. If en error occurs  an  error  message  is
+ * printed to 'stderr'.
+ */
+void change_directory(char** str_array);
 
-void print_working_directory(const char** str_array);
+/**
+ * Prints the absolute path to the current working directory to 'stdout'. If an
+ * error occurs an error message is instead printed to 'stderr'.
+ */
+void print_working_directory(char** str_array);
 
-void execute_binary(const char** str_array);
+/**
+ * Executes a binary in a child process and waits for the child  to  terminate.
+ * The childs exit code is then printed to 'stdout'.
+ */
+void execute_binary(char** str_array);
 
-void print_prompt() {
+void print_prompt(void) {
     const char* username = getenv("USER");
     if (!username) {
         LOG_WARNING("Failed to retrieve environment variable USER");
@@ -82,7 +97,7 @@ enum status execute_command(char* str) {
  * TODO: add color scheme to output in order to differentiate file types
  * TODO: add argument feature (e.g. what and where to print)
  */
-void list_directory(const char** str_array) {
+void list_directory(char** str_array) {
     LOG_DEBUG("Argument count: %d", str_array_len(str_array));
     if (str_array_len(str_array) > 1) {
         printf("minish: cd: too many arguments\n");
@@ -93,7 +108,10 @@ void list_directory(const char** str_array) {
     struct dirent* dirent;
 
     if (directory == NULL) {
-        perror("Failed to open current working directory: %s");
+        /* print message "minish: cd: <arg1>: <error msg>" */
+        const char* src = "minish: cd: ";
+        char dest[strlen(src) + strlen(str_array[1]) + 1];
+        perror(strcat(strcpy(dest, src), str_array[1]));
         return;
     }
 
@@ -105,16 +123,16 @@ void list_directory(const char** str_array) {
     closedir(directory);
 }
 
-void change_directory(const char** str_array) {
+void change_directory(char** str_array) {
     if (str_array_len(str_array) > 2)
-        printf("minish: cd: too many arguments\n");
+        fprintf(stderr, "minish: cd: too many arguments\n");
     else if (chdir(str_array[1]) == -1)
         perror("minish: cd");
 }
 
-void print_working_directory(const char** str_array) {
+void print_working_directory(char** str_array) {
     if (str_array_len(str_array) > 1) {
-        printf("minish: cd: too many arguments\n");
+        fprintf(stderr, "minish: cd: too many arguments\n");
         return;
     }
 
@@ -128,17 +146,21 @@ void print_working_directory(const char** str_array) {
     free(cwd);
 }
 
-void execute_binary(const char** str_array) {
+/**
+ * TODO: prevent possible fork bomb
+ */
+void execute_binary(char** str_array) {
     pid_t child_pid;
     int child_status;
 
-    LOG_DEBUG("Forking process");
     child_pid = fork();
+
     if (child_pid == 0) {
         /* This is the child */
         execv(str_array[0], str_array);
-        /* The  exec() functions return only if an error has occurred.  */
-        printf("Command '%s' not found\n", str_array[0]);
+        /* Execution did not succeed */
+        fprintf(stderr, "Command '%s' not found\n", str_array[0]);
+        exit(EXIT_FAILURE);
     } else {
         pid_t some_child;
         do {
@@ -146,5 +168,8 @@ void execute_binary(const char** str_array) {
             if (some_child == child_pid)
                 LOG_DEBUG("Child process terminated");
         } while (some_child != child_pid);
+
+        if (WIFEXITED(child_status))
+            printf("Process terminated with exit code %d\n", WEXITSTATUS(child_status));
     }
 }
