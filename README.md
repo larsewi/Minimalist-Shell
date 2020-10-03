@@ -3,7 +3,6 @@
 ## Table of Contents
 
 * [About the Project](#about-the-project)
-* [Getting Started](#getting-started)
 * [Compile](#compile)
 * [Usage](#usage)
   * [List directory](#list-directory)
