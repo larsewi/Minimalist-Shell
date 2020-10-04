@@ -19,11 +19,12 @@ enum status {
 };
 
 /**
- * Print prompt containing user name followed  by  '@minish: '.  If  user  name
- * cannot be retieved the prompt prints 'user@minish: '. Prompt is printed in a
- * bold green color scheme.
+ * Print prompt containing user name followed by '@minish: '. Prompt is printed
+ * in a bold green color scheme.
+ * 
+ * Returns an enum status code, see 'minish.h: enum status' for more info.
  */
-void print_prompt(void);
+enum status print_prompt(void);
 
 /**
  * Reads at moast one less then 'size' characters from input stream 'stdin' and

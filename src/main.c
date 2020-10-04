@@ -19,16 +19,17 @@
 /**
  * Entry point for Minimalist Shell.
  * Prompts user and reads input from user stored in a 4 KiB buffer.
- * Input is then parsed in to a shell command and executed.
+ * Input is then parsed into a shell command and executed.
  */
 int main(void) {
     enum status ret;
     char input_buffer[MAX_INPUT_SIZE];
 
     do {
-        print_prompt();
+        ret = print_prompt();
 
-        ret = get_user_input(input_buffer, MAX_INPUT_SIZE);
+        if (ret == Success)
+            ret = get_user_input(input_buffer, MAX_INPUT_SIZE);
 
         if (ret == Success)
             ret = execute_command(input_buffer);

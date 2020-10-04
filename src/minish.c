@@ -3,6 +3,8 @@
  * minish.c
  * Lars Erik Wik
  * 29/09/2020
+ * 
+ * Core functionallity of Minimalist Shell.
  */
 
 #include <stdlib.h>
@@ -26,20 +28,22 @@
 
 /**
  * Prints a list of all files in the current working directory to  'stdout'. If
- * an error occurs an error  message  is  printed  to  'stderr'.  Currently  no
+ * an error occurs, an error message  is  printed  to  'stderr'.  Currently  no
  * arguments are supported.
  */
 void list_directory(char** str_array);
 
 /**
- * Change current working directory. If en error occurs  an  error  message  is
- * printed to 'stderr'.
+ * Change  current  working  directory  to  directory  specified  by   argument
+ * 'str_array[1]'. If 'string_array' does not  contain  a  path  argument,  the
+ * directory is changed to '/home/<user>'. If en error occurs, an error message
+ * is printed to 'stderr'.
  */
 void change_directory(char** str_array);
 
 /**
  * Prints the absolute path to the current working directory to 'stdout'. If an
- * error occurs an error message is instead printed to 'stderr'.
+ * error occurs, an error message is printed to 'stderr'.
  */
 void print_working_directory(char** str_array);
 
@@ -49,13 +53,14 @@ void print_working_directory(char** str_array);
  */
 void execute_binary(char** str_array);
 
-void print_prompt(void) {
+enum status print_prompt(void) {
     const char* username = getenv("USER");
     if (!username) {
-        LOG_WARNING("Failed to retrieve environment variable USER");
-        username = "user";
+        LOG_ERROR("Failed to retrieve environment variable USER");
+        return Failure;
     }
     printf(COLOR_GREEN "%s@minish" COLOR_RESET "$ ", username);
+    return Success;
 }
 
 enum status get_user_input(char* buffer, int size) {
@@ -127,6 +132,7 @@ void change_directory(char** str_array) {
     if (str_array_len(str_array) > 2)
         fprintf(stderr, "minish: cd: too many arguments\n");
     else if (str_array_len(str_array) == 1) {
+        /* Create path '/home/<user>' */
         const char* username = getenv("USER");
         char path[strlen("/home/") + strlen(username) + 2];
 
@@ -147,6 +153,9 @@ void change_directory(char** str_array) {
     }
 }
 
+/**
+ * May be better to use getenv("PWD") ?
+ */
 void print_working_directory(char** str_array) {
     if (str_array_len(str_array) > 1) {
         fprintf(stderr, "minish: cd: too many arguments\n");
@@ -164,7 +173,8 @@ void print_working_directory(char** str_array) {
 }
 
 /**
- * TODO: prevent possible fork bomb
+ * TODO: add functionallity to look for executable in path.
+ * TODO: should see if binary exists before calling fork.
  */
 void execute_binary(char** str_array) {
     pid_t child_pid;
@@ -179,6 +189,7 @@ void execute_binary(char** str_array) {
         fprintf(stderr, "Command '%s' not found\n", str_array[0]);
         exit(EXIT_FAILURE);
     } else {
+        /* This is the parent */
         pid_t some_child;
         do {
             some_child = wait(&child_status);
@@ -187,6 +198,7 @@ void execute_binary(char** str_array) {
             }
         } while (some_child != child_pid);
 
+        /* Print child process exit code */
         if (WIFEXITED(child_status))
             printf("Process terminated with exit code %d\n", WEXITSTATUS(child_status));
     }

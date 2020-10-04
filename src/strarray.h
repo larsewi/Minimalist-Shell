@@ -3,6 +3,8 @@
  * strarray.h
  * Lars Erik Wik
  * 29/09/2020
+ * 
+ * Manipulate strings and arrays of strings.
  */
 
 #ifndef STRARRAY_H
